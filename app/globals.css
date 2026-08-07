@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body {
+    background-color: #fdf2f8;
+    color: #000000;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background-color: #000000;
+    color: #e60067;
+  }
+}
+
+/* =========================================
+   PERSONA GAME STYLE BACKGROUND & UTILITIES
+   ========================================= */
+.persona-bg {
+  background-color: #fdf2f8;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #fdf2f8,
+    #fdf2f8 24px,
+    #fce7f3 24px,
+    #fce7f3 48px
+  );
+  background-size: 67.88px 67.88px;
+  animation: slide-bg 3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .persona-bg {
+    animation: none;
+  }
+}
+
+@keyframes slide-bg {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 67.88px 67.88px;
+  }
+}
+
+/* Title 3D Text Effect */
+.persona-title-shadow {
+  position: relative;
+  display: inline-block;
+  color: #000000;
+  text-shadow: 4px 4px 0px #e60067;
+}
+
+/* Card Container Max Width & Framing */
+.persona-card-wrapper {
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Main Frame Card */
+.persona-card {
+  background-color: #ffffff;
+  border: 4px solid #000000;
+  box-shadow: 12px 12px 0px #e60067;
+  position: relative;
+  z-index: 10;
+  padding: 24px 28px;
+}
+
+/* Banner Strip */
+.persona-banner {
+  background-color: #000000;
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 28px;
+  margin-left: -28px;
+  margin-right: -28px;
+  border-top: 3px solid #000000;
+  border-bottom: 3px solid #000000;
+}
+
+/* Badge Label */
+.persona-badge {
+  background-color: #e60067;
+  color: #000000;
+  border: 2.5px solid #000000;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  box-shadow: 2px 2px 0px #000000;
+  position: absolute;
+  top: -14px;
+  left: 12px;
+  z-index: 20;
+}
+
+/* Input Field */
+.persona-input {
+  width: 100%;
+  background-color: #ffffff;
+  border: 3.5px solid #000000;
+  padding: 18px 14px 10px 14px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #000000;
+  outline: none;
+  box-shadow: 3px 3px 0px #000000;
+  transition: all 0.15s ease;
+}
+
+.persona-input:focus {
+  background-color: #fff5f9;
+  box-shadow: 4px 4px 0px #e60067;
+}
+
+.persona-input::placeholder {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Primary Button */
+.persona-btn {
+  width: 100%;
+  background-color: #000000;
+  color: #e60067;
+  border: 3.5px solid #000000;
+  font-weight: 900;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 12px 16px;
+  box-shadow: 7px 7px 0px #e60067;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.persona-btn:hover {
+  background-color: #e60067;
+  color: #000000;
+  box-shadow: 3px 3px 0px #000000;
+  transform: translate(2px, 2px);
+}
+
+.persona-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+/* Decorative Side Rectangles */
+.persona-deco-left {
+  position: absolute;
+  left: -36px;
+  top: 22%;
+  width: 90px;
+  height: 60px;
+  background-color: #e60067;
+  border: 3.5px solid #000000;
+  z-index: 0;
+}
+
+.persona-deco-right {
+  position: absolute;
+  right: -44px;
+  bottom: 14%;
+  width: 150px;
+  height: 42px;
+  background-color: #ffe600;
+  border: 3.5px solid #000000;
+  z-index: 0;
+}
