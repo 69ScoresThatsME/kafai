@@ -1,4 +1,6 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "https://kafai-api.vercel.app/api";
+export const API_BASE_URL = rawApiUrl.trim().replace(/^["']|["']$/g, '').replace(/\/$/, '');
+
 
 export interface AuthResponse {
   message?: string;

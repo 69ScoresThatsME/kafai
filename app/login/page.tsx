@@ -95,7 +95,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="persona-btn disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "AUTHENTICATING..." : "TAKE YOUR HEART"}
+                {loading ? "AUTHENTICATING..." : "Login"}
               </button>
             </div>
           </form>
@@ -103,7 +103,7 @@ export default function LoginPage() {
           {/* Switch to Register link */}
           <div className="mt-8 text-center border-t-2 border-dashed border-gray-300 pt-4">
             <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-700 flex items-center justify-center gap-2 flex-wrap">
-              <span>NEW PLAYER?</span>
+              <span>NEW ?</span>
               <Link
                 href="/register"
                 className="inline-block bg-[#e60067] text-black px-2.5 py-1 border-2 border-black font-black hover:bg-black hover:text-[#e60067] transition-all shadow-[2px_2px_0_0_#000]"
