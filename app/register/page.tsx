@@ -58,7 +58,7 @@ export default function RegisterPage() {
 
             {/* Full Width Black Banner */}
             <div className="persona-banner">
-              JOIN THE REBELLION?
+              REGISTER ?
             </div>
           </div>
 
