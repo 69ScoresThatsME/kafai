@@ -1,280 +1,154 @@
-# Kafai API Documentation
+# Kafai Frontend Structure
 
-Base URL (production): `https://ชื่อโปรเจกต์ของคุณ.vercel.app/api`
-Base URL (local dev): `http://localhost:3000/api`
+This repository is the browser frontend for Kafai, a personal electricity usage tracker. It is a Next.js 16 App Router application using React 19, TypeScript, Tailwind CSS v4, and `lucide-react`.
 
-ทุก response เป็น JSON. ทุก endpoint ที่ต้อง login จะต้องแนบ header:
-```
-Authorization: Bearer <token>
-```
+The frontend has no database access and no Next.js API routes. All persistence goes through the separate `kafai-api` repository. Read the workspace guide at `../structure.md` for the cross-repository architecture.
 
----
+## File map
 
-## 1. Auth
-
-### 1.1 สมัครสมาชิก
-```
-POST /auth/register
-```
-
-**Body**
-```json
-{
-  "username": "somchai",
-  "password": "mypassword"
-}
-```
-
-**Response 201 (สำเร็จ)**
-```json
-{
-  "message": "สมัครสมาชิกสำเร็จ",
-  "userId": "66b8f2a1c4e1a2b3d4e5f6a7"
-}
+```text
+kafai/
+├── app/
+│   ├── page.tsx              # Authenticated usage schedule and CRUD screen
+│   ├── login/page.tsx        # Login screen
+│   ├── register/page.tsx     # Account creation screen
+│   ├── statist/page.tsx      # Authenticated statistics screen
+│   ├── libs/api.ts           # API base URL, types, fetch wrappers, token handling
+│   ├── layout.tsx            # Root HTML layout, Geist fonts, metadata
+│   └── globals.css           # Tailwind import and shared visual utility classes
+├── public/                   # Static public assets
+├── iwant.jpg                 # Project image asset used by the repository as needed
+├── next.config.ts            # Next configuration; currently default options
+├── eslint.config.mjs         # ESLint configuration
+├── postcss.config.mjs        # Tailwind/PostCSS configuration
+├── tsconfig.json             # Strict TypeScript and @/* path alias
+├── package.json              # Scripts and dependencies
+├── AGENTS.md                 # Generated Next.js instructions
+└── structure.md              # This guide
 ```
 
-**Response 400** — กรอกไม่ครบ
-```json
-{ "error": "กรุณากรอก username และ password" }
-```
+## Routes and responsibilities
 
-**Response 409** — username ซ้ำ
-```json
-{ "error": "username นี้ถูกใช้แล้ว" }
-```
-
----
-
-### 1.2 เข้าสู่ระบบ
-```
-POST /auth/login
-```
-
-**Body**
-```json
-{
-  "username": "somchai",
-  "password": "mypassword"
-}
-```
-
-**Response 200 (สำเร็จ)**
-```json
-{
-  "message": "เข้าสู่ระบบสำเร็จ",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....",
-  "expiresIn": "30d"
-}
-```
-> เก็บ `token` นี้ไว้ (เช่น localStorage หรือ cookie) แล้วแนบไปกับทุก request ที่เรียก `/kafai/*` — token จะหมดอายุใน 30 วันนับจากตอน login
-
-**Response 401** — username/password ผิด
-```json
-{ "error": "username หรือ password ไม่ถูกต้อง" }
-```
-
----
-
-## 2. บันทึกค่าไฟ (kafai)
-
-> ทุก endpoint ในหมวดนี้ต้องแนบ `Authorization: Bearer <token>` มิฉะนั้นจะได้ 401
-
-โครงสร้างข้อมูล 1 รายการ (document):
-| field | type | ความหมาย |
+| Browser route | File | Behavior |
 |---|---|---|
-| `_id` | string | id ของรายการ |
-| `userId` | string | id ของเจ้าของข้อมูล |
-| `recordedAt` | date (ISO string) | วันที่บันทึกข้อมูลจริง |
-| `targetDate` | date (ISO string) | วันที่ต้องการให้ข้อมูลนี้ผูกกับ (เช่น จดมิเตอร์วันที่ 1 แต่ผูกกับค่าของวันที่ 2) |
-| `unit` | number | หน่วยไฟ (kWh) |
-| `createdAt` / `updatedAt` | date | เวลาที่สร้าง/แก้ไข record (auto) |
+| `/` | `app/page.tsx` | Requires a token, loads the user's records, adds/edits/deletes records, and renders calendar/table/list views. |
+| `/login` | `app/login/page.tsx` | Sends username/password to `loginApi`; successful login stores the JWT through `api.ts` and navigates to `/`. |
+| `/register` | `app/register/page.tsx` | Checks password confirmation locally, calls `registerApi`, then navigates to `/login` after success. |
+| `/statist` | `app/statist/page.tsx` | Requires a token, loads all records, calculates usage/cost summaries in the browser, and links back to `/`. |
 
----
+All four page files are client components. `layout.tsx` is the server root layout and supplies the global CSS and Geist font variables.
 
-### 2.1 เพิ่มข้อมูลค่าไฟ
-```
-POST /kafai
-```
+## API client contract
 
-**Headers**
-```
-Authorization: Bearer <token>
-Content-Type: application/json
-```
+`app/libs/api.ts` is the only frontend module that should normally call the backend. It exports:
 
-**Body**
-```json
-{
-  "recordedAt": "2026-08-07",
-  "targetDate": "2026-08-08",
-  "unit": 123.5
-}
-```
+- `API_BASE_URL`: `NEXT_PUBLIC_API_URL`, trimmed of surrounding quotes and a trailing slash, or `https://kafai-api.vercel.app/api` when unset.
+- `AuthResponse`: optional `message`, `token`, `expiresIn`, `userId`, and `error` fields.
+- `KafaiRecord`: `_id`, `userId`, `recordedAt`, `targetDate`, `unit`, and optional timestamps.
+- `loginApi(username, password)` and `registerApi(username, password)`.
+- `getKafaiListApi()`, `addKafaiApi(payload)`, `updateKafaiApi(id, payload)`, and `deleteKafaiApi(id)`.
 
-**Response 201**
-```json
-{
-  "_id": "66b90000c4e1a2b3d4e5f6a8",
-  "userId": "66b8f2a1c4e1a2b3d4e5f6a7",
-  "recordedAt": "2026-08-07T00:00:00.000Z",
-  "targetDate": "2026-08-08T00:00:00.000Z",
-  "unit": 123.5,
-  "createdAt": "2026-08-07T07:10:00.000Z",
-  "updatedAt": "2026-08-07T07:10:00.000Z"
-}
-```
+The authenticated wrappers read `localStorage.token`. If it is absent they return `{ error, status: 401 }` without making a request. Non-2xx JSON responses become the wrapper's `error` and `status`; network failures become a readable connection error containing the API URL.
 
-**Response 400** — กรอกไม่ครบ
-```json
-{ "error": "ต้องระบุ recordedAt, targetDate, unit ให้ครบ" }
-```
+The delete wrapper returns `{ success: true }` after any successful 2xx response and does not expose the backend's message to the page.
 
----
+## Authentication behavior
 
-### 2.2 ดูรายการทั้งหมด (ของ user ที่ login อยู่)
-```
-GET /kafai
-```
-เรียงจาก `targetDate` ล่าสุดไปเก่าสุด
+1. `/login` calls `POST /auth/login` through `loginApi`.
+2. On success, `loginApi` stores `data.token` in `localStorage` under `token`.
+3. The login page navigates to `/`.
+4. `/` and `/statist` check for `localStorage.token` after mounting. Without one, they navigate to `/login`.
+5. Every protected API call sends `Authorization: Bearer <token>`.
+6. If a protected request returns 401, the page removes the token and navigates to `/login`.
+7. Logout only removes the browser token and navigates to `/login`; there is no server-side logout or token revocation endpoint.
 
-**Headers**
-```
-Authorization: Bearer <token>
-```
+The token is a browser-local JWT with a backend-declared lifetime of 30 days. It is not an HTTP-only cookie.
 
-**Response 200**
-```json
-[
-  {
-    "_id": "66b90000c4e1a2b3d4e5f6a8",
-    "userId": "66b8f2a1c4e1a2b3d4e5f6a7",
-    "recordedAt": "2026-08-07T00:00:00.000Z",
-    "targetDate": "2026-08-08T00:00:00.000Z",
-    "unit": 123.5,
-    "createdAt": "2026-08-07T07:10:00.000Z",
-    "updatedAt": "2026-08-07T07:10:00.000Z"
-  }
-]
+## Schedule page behavior
+
+`app/page.tsx` owns all schedule-page state:
+
+- `records`: the complete list returned by `GET /kafai`.
+- `viewMode`: `calendar`, `table`, or `card`; default is `calendar`.
+- `currentYear` and `currentMonth`: selected calendar month; default to the browser's current month.
+- Add form: `recordedAt`, `targetDate`, and `unit`; date defaults use `new Date().toISOString().split("T")[0]`.
+- Edit modal: copies the selected record's three editable values and sends them with `PUT`.
+- `ratePerUnit`: default `4`; loaded from and saved to `localStorage.ratePerUnit`.
+
+After add, update, or delete, the page calls `fetchRecords()` again so the UI reflects backend state. Add and edit validate that `unit` is present and numeric in the browser. The backend remains the final validator and owner of persistence.
+
+Calendar and table/list filtering use `targetDate` first and fall back to `recordedAt` if needed. Calendar cells group records by `YYYY-MM-DD`; if multiple records share a target date, the cell displays their combined kWh and cost but its quick edit button opens only the first record. Table and list views show every record in the selected month.
+
+## Frontend calculations
+
+The rate is a local display multiplier:
+
+```text
+record cost = unit × ratePerUnit
+month units = sum(unit for records whose targetDate is in selected YYYY-MM)
+month cost = month units × ratePerUnit
+overall units = sum(unit for all loaded records)
+overall cost = overall units × ratePerUnit
 ```
 
----
+The statistics page additionally computes:
 
-### 2.3 ดูรายการเดียว
-```
-GET /kafai/:id
-```
+- record count;
+- monthly kWh and monthly cost, sorted newest month first;
+- average monthly kWh and cost across active months;
+- estimated annual kWh and cost by multiplying the active-month average by 12;
+- the highest and lowest single-record `unit` values;
+- the highest-usage month;
+- a progress bar where each month is compared with the highest month.
 
-**Response 200** — เหมือน object เดี่ยวด้านบน
+Statistics groups records by the local browser date from `new Date(targetDate || recordedAt)`. Schedule filtering uses the ISO string prefix. Keep this difference in mind when changing date handling or supporting time zones.
 
-**Response 404**
-```json
-{ "error": "ไม่พบข้อมูล" }
-```
+## Styling and UI conventions
 
----
+Most page styling is inline Tailwind utility classes. Shared custom classes are in `app/globals.css`:
 
-### 2.4 แก้ไขรายการ
-```
-PUT /kafai/:id
-```
+- `.persona-bg`: animated pink diagonal background with reduced-motion support;
+- `.persona-title-shadow`: black title with pink offset shadow;
+- `.persona-card-wrapper`, `.persona-card`: constrained framed form layout;
+- `.persona-banner`, `.persona-badge`: shared labels and banners;
+- `.persona-input`, `.persona-btn`: shared form controls;
+- `.persona-deco-left`, `.persona-deco-right`: decorative shapes.
 
-**Headers**
-```
-Authorization: Bearer <token>
-Content-Type: application/json
-```
+The visual language uses heavy black borders, pink `#e60067`, yellow `#ffe600`, white cards, and hard offset shadows. Preserve these patterns when adding UI unless the requested feature needs a deliberate redesign.
 
-**Body** (ส่งเฉพาะ field ที่จะแก้ก็ได้)
-```json
-{
-  "unit": 130
-}
-```
+## Local development
 
-**Response 200** — คืน object ที่อัปเดตแล้ว
+From this directory:
 
-**Response 404**
-```json
-{ "error": "ไม่พบข้อมูล" }
+```bash
+npm install
+npm run dev
 ```
 
----
+Open `http://localhost:3000`. To use a local API on another port, create a local `.env.local` with a browser-visible value such as:
 
-### 2.5 ลบรายการ
-```
-DELETE /kafai/:id
-```
-
-**Headers**
-```
-Authorization: Bearer <token>
+```text
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
-**Response 200**
-```json
-{ "message": "ลบข้อมูลสำเร็จ" }
+`NEXT_PUBLIC_API_URL` is embedded into the client bundle, so it must not contain secrets.
+
+Available scripts:
+
+```bash
+npm run dev     # Next development server
+npm run build   # Production build
+npm run start   # Serve a prior production build
+npm run lint    # ESLint
 ```
 
-**Response 404**
-```json
-{ "error": "ไม่พบข้อมูล" }
-```
+## Change guide for agents
 
----
-
-## 3. Error ที่เจอได้บ่อย
-
-| Status | ความหมาย |
-|---|---|
-| 400 | ข้อมูลที่ส่งมาไม่ครบ/ไม่ถูกต้อง |
-| 401 | ไม่มี token / token หมดอายุ / login ผิด |
-| 404 | ไม่พบข้อมูล / endpoint ไม่มีจริง |
-| 409 | username ซ้ำ (ตอน register) |
-| 500 | error ฝั่ง server เช่นต่อ DB ไม่ได้ |
-
----
-
-## 4. ตัวอย่างเรียกจาก Frontend (fetch)
-
-```js
-const BASE_URL = "https://ชื่อโปรเจกต์ของคุณ.vercel.app/api";
-
-// login
-async function login(username, password) {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  const data = await res.json();
-  if (res.ok) {
-    localStorage.setItem("token", data.token);
-  }
-  return data;
-}
-
-// เพิ่มค่าไฟ (ต้อง login ก่อน)
-async function addKafai(recordedAt, targetDate, unit) {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${BASE_URL}/kafai`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ recordedAt, targetDate, unit }),
-  });
-  return res.json();
-}
-
-// ดึงรายการทั้งหมด
-async function getKafaiList() {
-  const token = localStorage.getItem("token");
-  const res = await fetch(`${BASE_URL}/kafai`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.json();
-}
-```
-
-> ถ้า response กลับมาเป็น 401 ที่หน้าไหนก็ตาม แปลว่า token หมดอายุ (เกิน 30 วัน) — ให้เด้งกลับไปหน้า login ใหม่
+- Change a page layout or interaction in its route's `page.tsx`.
+- Change request shape, token attachment, response handling, or shared record typing in `app/libs/api.ts`.
+- Change global fonts/metadata in `app/layout.tsx`.
+- Change shared visual classes or global CSS in `app/globals.css`.
+- For an API contract change, update this guide, the backend guide, and the matching client wrapper/page together.
+- Keep browser-only APIs inside client components/effects or guarded code. `localStorage` is unavailable during server rendering.
+- Do not add a second ad hoc `fetch` implementation in a page when `app/libs/api.ts` can own it.
+- Read `AGENTS.md` before editing. It contains generated Next.js version-specific instructions and may be regenerated by `next dev`.
